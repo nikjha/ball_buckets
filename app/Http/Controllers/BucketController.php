@@ -2,6 +2,7 @@
 namespace App\Http\Controllers;
 use App\Models\Bucket;
 use App\Models\Ball;
+use App\Models\Ball_Purchased;
 use Illuminate\Http\Request;
 
 class BucketController extends Controller
@@ -9,11 +10,27 @@ class BucketController extends Controller
     public function index()
     {
         $buckets = Bucket::all();
-        $balls = Ball::all();
+        $balls = Ball::with('purchases')->get();
+
+        foreach ($balls as $ball) {
+            \DB::enableQueryLog();
+            $purchasedQuantity = $ball->purchases->sum('qty');
+            $ballsbought[] = [
+                    'color' => $ball->color,
+                    'qty' => $purchasedQuantity
+                ];
+        }
+        $suggestions = [];
         
-        $totalVolume = $buckets[0]->volume; 
-        $suggestions = $this->calculateBallsForSpace($totalVolume);
-        return view('buckets.index', compact('buckets','balls', 'suggestions'));
+
+        if ($buckets->isNotEmpty()) {
+            foreach ($buckets as $bucket) {
+                $totalVolume = $bucket->volume;
+                $suggestions[$bucket->id] = $this->calculateBallsForSpace($totalVolume);
+            }
+        }
+
+        return view('buckets.index', compact('buckets', 'balls', 'suggestions','ballsbought'));
     }
 
     public function create()
@@ -35,6 +52,40 @@ class BucketController extends Controller
         
 
         return redirect()->route('buckets.index')->with('success', 'Bucket created successfully.');
+    }
+    public function ball_buy(Request $request)
+    {
+        $request->validate([
+            'ball_id' => 'required|numeric',
+            'qty' => 'required|numeric|min:1',
+        ]);
+
+        $ballId = $request->input('ball_id');
+        $quantityToAdd = $request->input('qty');
+
+        // Check if the ball exists
+        $ball = Ball::find($ballId);
+
+        if (!$ball) {
+            return redirect()->route('buckets.index')->with('error', 'Ball not found.');
+        }
+
+        // Check if there is a previous purchase record for this ball
+        $ballPurchased = Ball_Purchased::where('ball_id', $ballId)->first();
+
+        if ($ballPurchased) {
+            // If a previous purchase record exists, update the quantity
+            $ballPurchased->qty += $quantityToAdd;
+            $ballPurchased->save();
+        } else {
+            // If no previous purchase record exists, create a new one
+            Ball_Purchased::create([
+                'ball_id' => $ballId,
+                'qty' => $quantityToAdd,
+            ]);
+        }
+
+        return redirect()->route('buckets.index')->with('success', 'Ball Bought: ' . $quantityToAdd);
     }
 
     public function edit(Bucket $bucket)
@@ -65,58 +116,35 @@ class BucketController extends Controller
         return redirect()->route('buckets.index')->with('success', 'Bucket deleted successfully.');
     }
 
-    public function placeBalls(Request $request, Bucket $bucket)
+    
+public function calculateBallsForSpace($totalVolume)
     {
-        $request->validate([
-            'pink' => 'required|integer|min:0',
-            'red' => 'required|integer|min:0',
-            'blue' => 'required|integer|min:0',
-            'orange' => 'required|integer|min:0',
-            'green' => 'required|integer|min:0',
-        ]);
+        // Retrieve all available balls from the database
+        $balls = Ball::all();
+        $ballsToPlace = [];
 
-        $balls = [
-            'pink' => $request->input('pink'),
-            'red' => $request->input('red'),
-            'blue' => $request->input('blue'),
-            'orange' => $request->input('orange'),
-            'green' => $request->input('green'),
-        ];
+        foreach ($balls as $ball) {
+            $availableBalls = $ball->qty; // Get the available quantity of balls for the color
+            $requiredBalls = 0;
 
-        $placedBalls = $bucket->placeBalls($balls);
+            // Try to place balls until the total volume is filled or no more balls are available
+            while ($totalVolume >= $ball->volume && $availableBalls > 0) {
+                $totalVolume -= $ball->volume;
+                $requiredBalls++;
+                $availableBalls--;
+            }
 
-        return response()->json(['message' => 'Balls placed successfully.', 'placedBalls' => $placedBalls]);
-    }
-    
-
-    
-    public function calculateBallsForSpace($totalVolume)
-{
-    $balls = Ball::all();
-    $ballsToPlace = [];
-
-    foreach ($balls as $ball) {
-        $availableBalls = $ball->qty; // Get the available quantity of balls for the color
-        $requiredBalls = 0;
-
-        while ($totalVolume >= $ball->volume && $availableBalls > 0) {
-            $totalVolume -= $ball->volume;
-            $requiredBalls++;
-            $availableBalls--;
+            // If any balls were placed, add them to the list
+            if ($requiredBalls > 0) {
+                $ballsToPlace[] = [
+                    'color' => $ball->color,
+                    'quantity' => $requiredBalls,
+                    'volume' => $ball->volume
+                ];
+            }
         }
 
-        if ($requiredBalls > 0) {
-            $ballsToPlace[] = [
-                'color' => $ball->color,
-                'quantity' => $requiredBalls,
-                'volume' => $ball->volume
-            ];
-        }
+        return $ballsToPlace;
     }
-
-    return $ballsToPlace;
-}
-
-
 
 }

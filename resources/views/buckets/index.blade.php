@@ -10,10 +10,11 @@
 </head>
 
 <body>
-    <div class="container-fluid mt-5">
-        <div class="row">
+    <div class="container ">
+        <hr />
+        <div class="row mt-3">
             <!-- Bucket Form Column -->
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <h2>Bucket Form</h2>
                 <form id="bucket-form">
                     @csrf
@@ -28,7 +29,7 @@
                     <button type="submit" class="btn btn-primary">Save Bucket</button>
                 </form>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
             	<h2>Ball Form</h2>
                 <form id="ball-form">
                 	<div class="form-group">
@@ -39,65 +40,78 @@
                         <label for="bucket-volume">Volume (in inches)</label>
                         <input type="text" class="form-control" id="bucket-volume" name="volume" required>
                     </div>
-                    <div class="form-group">
+                    <!-- <div class="form-group">
                         <label for="bucket-volume">Balls Quanity</label>
                         <input type="text" class="form-control" id="bucket-volume" name="qty" required>
-                    </div>
+                    </div> -->
                     <button type="submit" class="btn btn-primary">Save Bucket</button>
                 </form>
             </div>
             
-            <!-- Place Balls Form Column -->
-           <div class="col-md-3">
-                <h2>Bucket Available</h2>
-                <div id="buckets-list">
-                    @foreach ($buckets as $bucket)
-                    <p>Bucket: {{ $bucket->name }}</p>
-                    <p>Size: {{ $bucket->volume }}</p>
-                
-                    @endforeach
-
-                </div>
-                <h2>Balls Suggested</h2>
-                <div id="buckets-list">
-                    @foreach ($suggestions as $suggestion)
-                        <p>Ball Size [{{ $suggestion['volume'] }}] of {{ $suggestion['color'] }} {{ $suggestion['quantity'] }} quantities.</p>
-                        
-                    @endforeach
-                </div>
-
-            </div>
             <div class="col-md-3">
-                <h2>Balls Available</h2>
-                <form id="place-balls-form">
+            	<h2>Ball Buy Form</h2>
+                <form id="ball_buy_form">
                     @csrf
-                     <div class="form-group">
-                        <label for="bucket-select">Select Bucket</label>
-                        <select class="form-control" id="bucket-select" name="bucket" required>
-                            @foreach ($buckets as $bucket)
-                                <option value="{{ $bucket->id }}" data-volume="{{ $bucket->volume }}">{{ $bucket->name }}</option>
+                    <div class="form-group">
+                        <label for="bucket-select">Select Ball</label>
+                        <select class="form-control" id="bucket-select" name="ball_id" required>
+                            @foreach ($balls as $ball)
+                                <option value="{{ $ball->id }}" data-name="{{ $ball->name }}">{{ $ball->color }}</option>
                             @endforeach
                         </select>
                     </div>
-                    @foreach ($balls as $ball)
+    
                     <div class="form-group">
-                        <label for="balls-name">{{$ball->color}}:
-                        <input type="text" class="form-control" id="quantity" name="qty" value="{{$ball->qty}}" required>
+                        <label for="bucket-volume">Balls Quanity</label>
+                        <input type="text" class="form-control" id="bucket-qty" name="qty" required>
+                    </div>
+                    <button type="submit" class="btn btn-secondary">Buy Now</button>
+                </form>
+            </div>
+            
+
+        </div>
+    </div>
+        <!-- Results Row -->
+    <div class="container">
+        <hr />
+        <div class="row mt-3">        
+
+           <div class="col-md-4">
+                <div id="buckets-list">
+                    @foreach ($buckets as $bucket)
+                    <p>Bucket: {{ $bucket->name }} &nbsp;&nbsp;Size: {{ $bucket->volume }} inches</p>                
+                    @endforeach
+
+                </div>
+                @if (!(empty($suggestions[1])))
+
+                <div id="buckets-list">
+                    @foreach ($suggestions as $bucketId => $bucketSuggestions)
+                        <h3>Bucket {{ $bucketId }} Suggestions:</h3>
+                        @foreach ($bucketSuggestions as $suggestion)
+                            <p>Ball Size [{{ $suggestion['volume'] }}] of {{ $suggestion['color'] }}: {{ $suggestion['quantity'] }} quantities.</p>
+                        @endforeach
+                    @endforeach
+                </div>
+
+                @endif
+
+            </div>
+
+            <div class="col-md-4">
+                
+                <h2>Balls Available</h2>
+                    @foreach ($ballsbought as $ball)
+                    <div class="form-group">
+                        <label for="balls-name">{{$ball['color']}}: {{$ball['qty']}} qty
+                        
                         </label>
                     </div>
                     @endforeach
-                    
-
-                    <!-- <button type="submit" class="btn btn-primary">Place Balls in Bucket</button> -->
-                </form>
             </div>
 
-        </div>
 
-        <!-- Results Row -->
-        
-        <div class="row mt-4">
-            
         </div>
     </div>
 
@@ -122,6 +136,26 @@
             },
             error: function(error) {
                 alert('Error occurred while saving bucket.');
+            }
+        });
+    });
+
+    // Submit Ball Buy Form using Ajax
+    $('#ball_buy_form').submit(function(event) {
+        event.preventDefault();
+        var csrfToken = $('meta[name="csrf-token"]').attr('content');
+        $.ajax({
+            url: '/ball_buy',
+            type: 'POST',
+            data: $(this).serialize(),
+            headers: {
+                'X-CSRF-TOKEN': csrfToken
+            },
+            success: function(response) {
+                alert(response.message);
+            },
+            error: function(error) {
+                alert('Error occurred while buying ball.');
             }
         });
     });

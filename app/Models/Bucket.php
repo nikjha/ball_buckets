@@ -7,10 +7,10 @@ class Bucket extends Model
 {
     protected $fillable = ['name', 'volume'];
 
-    // public function balls()
-    // {
-    //     return $this->hasMany(Ball::class);
-    // }
+    public function balls()
+    {
+        return $this->hasMany(Ball::class);
+    }
 
     public function placeBalls($balls)
     {
