@@ -110,6 +110,34 @@
                     </div>
                     @endforeach
             </div>
+            <div class="col-md-4">
+                <form action="{{ route('buckets.store') }}" method="post">
+                    @csrf
+
+                    <h2>Fill the Buckets</h2>
+
+                    <div id="bucket-a">
+                        <h3>Bucket A:</h3>
+                        @foreach ($bucketA as $color => $quantity)
+                            <label for="{{ $color }}_a">{{ ucfirst($color) }} Balls (Available: {{ $quantity }})</label>
+                            <input type="number" id="{{ $color }}_a" name="{{ $color }}_a" min="0" max="{{ $quantity }}">
+                            <br>
+                        @endforeach
+                    </div>
+
+                    <div id="bucket-b">
+                        <h3>Bucket B:</h3>
+                        @foreach ($bucketB as $color => $quantity)
+                            <label for="{{ $color }}_b">{{ ucfirst($color) }} Balls (Available: {{ $quantity }})</label>
+                            <input type="number" id="{{ $color }}_b" name="{{ $color }}_b" min="0" max="{{ $quantity }}">
+                            <br>
+                        @endforeach
+                    </div>
+
+                    <button type="submit">Submit</button>
+                </form>
+
+            </div>
 
 
         </div>
