@@ -2,7 +2,7 @@
 $servername = "localhost";
 $username = "root";
 $password = "MyNewPass";
-$database = "ballbuckets";
+$database = "ballsbuckets";
 
 $conn = new mysqli($servername, $username, $password, $database);
 
@@ -36,18 +36,14 @@ if (isset($_POST['create_ball'])) {
 if (isset($_POST['suggest_buckets'])) {
     $redBalls = $_POST['red_balls'];
     $blueBalls = $_POST['blue_balls'];
-    
-    // Calculate total size of balls brought from the shop
     $totalSize = $redBalls * 5 + $blueBalls * 3;
-    
-    // Fetch buckets from the database
     $buckets = [];
     $result = $conn->query("SELECT * FROM buckets");
     while($row = $result->fetch_assoc()) {
         $buckets[] = $row;
     }
     
-    // Distribute balls into buckets
+    // Distributing balls into buckets
     foreach ($buckets as &$bucket) {
         while ($redBalls > 0 && $bucket['capacity'] >= 5) {
             $bucket['capacity'] -= 5;
@@ -59,7 +55,7 @@ if (isset($_POST['suggest_buckets'])) {
         }
     }
     
-    // Check if there are extra balls that couldn't fit in any bucket
+    // Checking if there are extra balls that couldn't fit in any bucket and causing overflow
     if ($redBalls > 0 || $blueBalls > 0) {
         echo "$redBalls Red Balls and $blueBalls Blue Balls cannot be accommodated in any bucket since there is no available space.";
     } else {
