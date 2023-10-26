@@ -2,7 +2,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-
+use App\Models\Results;
 class Bucket extends Model
 {
     protected $fillable = ['name', 'volume'];
@@ -30,5 +30,21 @@ class Bucket extends Model
 
         return $placedBalls;
     }
+
+    public static function fetchBucketId($criteria)
+        {
+            
+            $bucket = Bucket::whereNotIn('id', Results::pluck('bucket_id'))
+                ->first();
+
+            
+            if ($bucket) {
+                return $bucket->id;
+            } else {
+                return 1;
+            }
+        }
+
+
 }
 

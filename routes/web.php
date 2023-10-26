@@ -23,7 +23,7 @@ Route::post('/balls', [BallController::class, 'store'])->name('balls.store');
 Route::post('/buckets', [BucketController::class, 'index'])->name('buckets.index');
 
 
-Route::post('/buckets/place-balls', [BucketController::class, 'placeBalls'])->name('buckets.place-balls');
+Route::post('/ball_suggestion', [BucketController::class, 'placeBalls'])->name('ball_suggestion');
 
 // Route::get('/', function () {
 //     return view('welcome');

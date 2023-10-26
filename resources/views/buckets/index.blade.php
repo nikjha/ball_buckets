@@ -99,9 +99,9 @@
 
             </div>
 
-            <div class="col-md-4">
+            <div class="col-md-3">
                 
-                <h2>Balls Available</h2>
+                <h2>Balls Bought</h2>
                     @foreach ($ballsbought as $ball)
                     <div class="form-group">
                         <label for="balls-name">{{$ball['color']}}: {{$ball['qty']}} qty
@@ -110,8 +110,21 @@
                     </div>
                     @endforeach
             </div>
-            <div class="col-md-4">
-                
+            <div class="col-md-5">
+                <h2>Ball Suggestion Form</h2>
+                <form id="ball_suggestion">
+                    @csrf
+                    <div class="form-group">
+                            @foreach ($ballsbought as $ball)
+                            <label for="bucket-select">{{ $ball['color'] }}: 
+                                <input type="text" name="{{ $ball['color'] }}" value="{{ $ball['qty'] }}">
+                                </label>
+                            @endforeach
+                            
+                        </select>
+                    </div>
+                     <button type="submit" class="btn btn-secondary">Place Now</button>
+                </form>
             </div>
 
 
@@ -134,8 +147,13 @@
                 'X-CSRF-TOKEN': csrfToken
             },
             success: function(response) {
-                alert(response.message);
-                // Clear the form or update the buckets list
+               if(response.error){
+                    alert(response.error);
+                }
+                else{
+                    alert(response.message);
+                    location.reload();
+                }
             },
             error: function(error) {
                 alert('Error occurred while saving bucket.');
@@ -155,13 +173,47 @@
                 'X-CSRF-TOKEN': csrfToken
             },
             success: function(response) {
-                alert(response.message);
+               if(response.error){
+                    alert(response.error);
+                }
+                else{
+                    alert(response.message);
+                    location.reload();
+                }
             },
             error: function(error) {
                 alert('Error occurred while buying ball.');
             }
         });
     });
+    // Submit Ball Buy Form using Ajax
+    $('#ball_suggestion').submit(function(event) {
+        event.preventDefault();
+        var csrfToken = $('meta[name="csrf-token"]').attr('content');
+        $.ajax({
+            url: '/ball_suggestion',
+            type: 'POST',
+            data: $(this).serialize(),
+            headers: {
+                'X-CSRF-TOKEN': csrfToken
+            },
+            success: function(response) {
+                if(response.error){
+                    alert(response.error);
+                }
+                else{
+                    alert(response.message);
+                    location.reload();
+                }
+                
+
+            },
+            error: function(error) {
+                alert('Error occurred while buying ball.');
+            }
+        });
+    });
+
 
     // Submit Ball Form using Ajax
     $('#ball-form').submit(function(event) {
@@ -175,7 +227,13 @@
                 'X-CSRF-TOKEN': csrfToken
             },
             success: function(response) {
-                alert(response.message);
+                if(response.error){
+                    alert(response.error);
+                }
+                else{
+                    alert(response.message);
+                    location.reload();
+                }
             },
             error: function(error) {
                 alert('Error occurred while saving ball.');
@@ -196,7 +254,13 @@
                 'X-CSRF-TOKEN': csrfToken
             },
             success: function(response) {
-                alert(response.message);
+                if(response.error){
+                    alert(response.error);
+                }
+                else{
+                    alert(response.message);
+                    location.reload();
+                }
             },
             error: function(error) {
                 alert('Error occurred while placing balls in the bucket.');

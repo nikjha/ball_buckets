@@ -51,7 +51,10 @@ class BucketController extends Controller
         ]);
         
 
-        return redirect()->route('buckets.index')->with('success', 'Bucket created successfully.');
+        // return redirect()->route('buckets.index')->with('success', 'Bucket created successfully.');
+        return response()->json([
+                'message' => 'Bucket created successfully.'
+            ]);
     }
     public function ball_buy(Request $request)
     {
@@ -67,7 +70,10 @@ class BucketController extends Controller
         $ball = Ball::find($ballId);
 
         if (!$ball) {
-            return redirect()->route('buckets.index')->with('error', 'Ball not found.');
+            #return redirect()->route('buckets.index')->with('error', 'Ball not found.');
+            return response()->json([
+                'error' => 'Error in Ball Bought'.$quantityToAdd
+            ]);
         }
 
         // Check if there is a previous purchase record for this ball
@@ -85,7 +91,10 @@ class BucketController extends Controller
             ]);
         }
 
-        return redirect()->route('buckets.index')->with('success', 'Ball Bought: ' . $quantityToAdd);
+        #return redirect()->route('buckets.index')->with('message', 'Ball Bought: ' . $quantityToAdd);
+        return response()->json([
+                'message' => 'Ball Bought'.$quantityToAdd
+            ]);
     }
 
     public function edit(Bucket $bucket)
@@ -146,5 +155,94 @@ public function calculateBallsForSpace($totalVolume)
 
         return $ballsToPlace;
     }
+
+    public function placeBalls(Request $request)
+    {
+        // Retrieve available space (volume) from the request
+        $volume = $request->input('volume');
+        // Retrieve ball colors and quantities from the form
+        $ballsbought = $request->except('_token', 'volume');
+
+        $remainingVolume = $volume;
+        $placedBalls = [];
+        $overflowBalls = [];
+        $criteria = $this->calculateCriteriaValue($ballsbought);
+        $bucketId = Bucket::fetchBucketId($criteria);
+
+        foreach ($ballsbought as $color => $quantity) {
+            if (!ctype_digit($quantity) || $quantity <= 0) {
+                return response()->json(['error' => 'Invalid quantity for ' . $color]);
+            }
+
+            // Calculate total volume for this color based on quantity
+            $ballVolume = $quantity * $this->getBallVolume($color);
+
+            // Checking if the requested volume exceeds the available space
+            if ($ballVolume > $remainingVolume) {
+                // Handling overflow by storing the color and volume of the ball that didn't fit
+                $overflowBalls[] = ['color' => $color, 'volume' => $ballVolume];
+            } else {
+                $this->storePlacedBalls($bucketId, $color, $ballVolume, $quantity);
+                $remainingVolume -= $ballVolume;
+                $placedBalls[$color] = $quantity;
+            }
+        }
+
+        // Check if there are overflow balls
+        if (count($overflowBalls) > 0) {
+            return response()->json([
+                'message' => 'Overflow: Some balls cannot be accommodated.',
+                'overflowBalls' => $overflowBalls,
+                'placedBalls' => $placedBalls,
+                'remainingVolume' => $remainingVolume
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'All balls placed successfully.',
+            'placedBalls' => $placedBalls,
+            'remainingVolume' => $remainingVolume
+        ]);
+    }
+
+
+    public function getBallVolume($color)
+    {
+        $ball = Ball::where('color', $color)->first();
+
+        if ($ball) {
+            return $ball->volume;
+        } else {
+            return 0; 
+        }
+    }
+
+    private function storePlacedBalls($color, $ballVolume, $quantity)
+    {
+        
+        for ($i = 0; $i < $quantity; $i++) {
+        Results::create([
+            'ball_id' => $color,
+            'no_of_balls' => $ballVolume,
+        ]);
+    }
+    }
+    private function calculateCriteriaValue($ballsbought)
+    {
+        $totalVolume = 0;
+
+        foreach ($ballsbought as $color => $quantity) {
+            if (!ctype_digit($quantity) || $quantity <= 0) {
+                return response()->json(['error' => 'Invalid quantity for ' . $color]);
+            }
+
+            $ballVolume = $quantity * $this->getBallVolume($color);
+            $totalVolume += $ballVolume;
+        }
+
+        return $totalVolume;
+    }
+
+
 
 }
